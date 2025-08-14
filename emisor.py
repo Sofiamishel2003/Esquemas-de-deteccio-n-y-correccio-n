@@ -4,35 +4,63 @@ import sys
 def solo_bits(s: str) -> bool:
     return all(c in '01' for c in s) and len(s) > 0
 
-# --------------- Hamming (m+r+1 <= 2^r) --------------
-def hamming_emit(msg_bits: str) -> str:
+# ----------------Hamming (algoritmo con MATRIZ + STACK, paridad par) ----------------
+def hamming_emit(msg_bits: str, verbose: bool = True) -> str:
+    """
+    Implementa el emisor de Hamming siguiendo los pasos de la consigna:
+    1) calcular p con 2^p >= m + p + 1
+    2) crear matriz m_total x 2 (col 1: posición 1..m_total; col 0: bit)
+    3) reservar posiciones de paridad P1,P2,... en potencias de 2
+    4) colocar bits del mensaje en el resto
+    5) para cada Px, crear un stack con bits de posiciones no-paridad cuya pos tenga 1 en el bit x (1-indexado)
+    6) hacer XOR con pops del stack y asignar el resultado a Px
+    7) concatenar la palabra código
+    """
     m = len(msg_bits)
-    # calcular r mínimo tal que 2^r >= m + r + 1
-    r = 0
-    while (2 ** r) < (m + r + 1):
-        r += 1
-
-    # construir arreglo 1-indexado con espacios para paridades
-    n = m + r
-    code = ['0'] * (n + 1)  # índice 0 se ignora
-
-    # colocar datos en posiciones que NO son potencia de 2
+    # calcular p
+    p = 0
+    while (2 ** p) < (m + p + 1):
+        p += 1
+    m_total = m + p
+    # matriz [ [bit], [pos] ] como en el ejemplo (col 0 -> bit, col 1 -> pos)
+    matriz = [[None, str(i + 1)] for i in range(m_total)]
+    # reservar posiciones de paridad (potencias de 2): P1,P2,...
+    posiciones_paridad = set()
+    for i in range(p):
+        pos = 1 << i  # 1,2,4,8,...
+        posiciones_paridad.add(pos)
+        matriz[pos - 1][0] = f"P{i+1}"
+    # colocar mensaje en posiciones no-paridad
     j = 0
-    for i in range(1, n + 1):
-        if i & (i - 1) != 0:  # no es potencia de 2
-            code[i] = msg_bits[j]
+    for i in range(m_total):
+        pos = i + 1
+        if pos not in posiciones_paridad:
+            matriz[i][0] = msg_bits[j]
             j += 1
+    # calcular cada paridad con stack + XOR
+    for k in range(p):
+        pos_paridad = 1 << k
+        mask = pos_paridad  # bit a testear en la posición
 
-    # calcular bits de paridad (paridad par)
-    for p in range(r):
-        pos = 1 << p  # 1,2,4,8,...
-        suma = 0
-        for i in range(1, n + 1):
-            if i & pos:
-                suma ^= int(code[i])
-        code[pos] = str(suma)  # con paridad par, asignar el XOR directo
+        # construir stack con bits elegibles (no-paridad y pos & mask != 0)
+        stack = []
+        posiciones_incluidas = []
+        for i in range(m_total):
+            pos = i + 1
+            if (pos not in posiciones_paridad) and (pos & mask):
+                stack.append(matriz[i][0][0])  # '0' o '1'
+                posiciones_incluidas.append(pos)
+        # XOR acumulado con pops (equivalente a XOR de todos los bits)
+        res = '0'
+        while stack:
+            bit = stack.pop()
+            res = '0' if res == bit else '1'
+        # asignar resultado a la posición de paridad
+        matriz[pos_paridad - 1][0] = res
+    # palabra código
+    codeword = ''.join(matriz[i][0] for i in range(m_total))
+    return codeword
 
-    return ''.join(code[1:])
 
 # ------------------- CRC-32 (MSB-first, polinomio 0x04C11DB7) -------------------
 POLY = 0x04C11DB7  # grado 32
@@ -50,8 +78,8 @@ def crc32_remainder(bits: str) -> str:
     # adjuntar 32 ceros
     data += [0] * POLY_DEG
 
-    # representación del polinomio como vector de bits de longitud 33 (coef x^32 .. x^0)
-    poly = [(POLY >> i) & 1 for i in range(POLY_DEG, -1, -1)]
+    # representación del polinomio como vector de bits de longitud 33 (coef x^32 .. x^0) incluye el 1 de x^32 seguido de los 32 bit
+    poly = [1] + [ (POLY >> i) & 1 for i in range(POLY_DEG - 1, -1, -1) ]
 
     # copia para operar
     work = data[:]

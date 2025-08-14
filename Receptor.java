@@ -98,10 +98,14 @@ public class Receptor {
         }
 
         static int[] polyVector() {
-            int[] v = new int[DEG + 1];
-            for (int i = DEG; i >= 0; i--) v[DEG - i] = ((POLY >>> i) & 1);
+            int[] v = new int[DEG + 1];     // 33 bits
+            v[0] = 1;                        // x^32
+            for (int i = DEG - 1, j = 1; i >= 0; i--, j++) {
+                v[j] = (POLY >>> i) & 1;     // bits 31..0 de 0x04C11DB7
+            }
             return v;
         }
+
 
         static int[] strToInts(String s) {
             int[] v = new int[s.length()];
