@@ -10,32 +10,56 @@ public class Receptor {
     // ---------------- Hamming (paridad par) -----------------
     static class Hamming {
         static String recibir(String trama) {
-            int n = trama.length();
+            if (trama.length() < 3) return "[RECEPTOR:Hamming] Trama demasiado corta.";
+
+            // separar p0 (último bit) y el resto del código
+            int nTotal = trama.length();
+            int p0 = trama.charAt(nTotal - 1) - '0';
+            String cword = trama.substring(0, nTotal - 1); // sin p0
+            int n = cword.length();
             int r = 0;
             while ((1 << r) < (n + 1)) r++;
+            // 1-indexado sobre 'cword'
             int[] code = new int[n + 1];
-            for (int i = 1; i <= n; i++) code[i] = trama.charAt(i - 1) - '0';
+            for (int i = 1; i <= n; i++) code[i] = cword.charAt(i - 1) - '0';
 
+            // síndrome (paridad par)
             int syndrome = 0;
             for (int p = 0; p < r; p++) {
                 int pos = 1 << p, sum = 0;
                 for (int i = 1; i <= n; i++) if ((i & pos) != 0) sum ^= code[i];
                 if ((sum & 1) == 1) syndrome |= pos;
             }
-            if (syndrome == 0) {
+            // paridad global incluyendo p0
+            int parityAll = p0;
+            for (int i = 1; i <= n; i++) parityAll ^= code[i]; // XOR de todo
+            // casos SECDED:
+            // parityAll==0 -> número par de bits en error
+            // parityAll==1 -> número impar de bits en error
+            if (syndrome == 0 && parityAll == 0) {
+                // sin errores
                 String msg = extraerDatos(code);
-                return "[RECEPTOR:Hamming] Sin errores. Mensaje original: " + msg;
-            } else if (syndrome >= 1 && syndrome <= n) {
+                return "[RECEPTOR:Hamming-SECDED] Sin errores. Mensaje original: " + msg;
+            }
+            if (syndrome == 0 && parityAll == 1) {
+                // error solo en p0
+                return "[RECEPTOR:Hamming-SECDED] Se corrigió el bit de paridad global (p0). Mensaje: " + extraerDatos(code);
+            }
+            if (syndrome != 0 && parityAll == 1) {
+                // un error en alguna posición del código (corregible)
                 code[syndrome] ^= 1;
                 String msg = extraerDatos(code);
-                return "[RECEPTOR:Hamming] Se corrigió 1 bit en posición " + syndrome + ". Mensaje corregido: " + msg;
-            } else {
-                return "[RECEPTOR:Hamming] Síndrome inválido. Mensaje descartado.";
+                return "[RECEPTOR:Hamming-SECDED] Se corrigió 1 bit en posición " + syndrome + ". Mensaje corregido: " + msg;
             }
+            // syndrome != 0 && parityAll == 0  ->  2+ errores: DETECTA pero NO corrige
+            return "[RECEPTOR:Hamming-SECDED] Se detectaron múltiples errores (2+). Mensaje descartado.";
         }
+
         static String extraerDatos(int[] code) {
             StringBuilder sb = new StringBuilder();
-            for (int i = 1; i < code.length; i++) if ((i & (i - 1)) != 0) sb.append(code[i]);
+            for (int i = 1; i < code.length; i++) {
+                if ((i & (i - 1)) != 0) sb.append(code[i]); // saltar potencias de 2
+            }
             return sb.toString();
         }
     }

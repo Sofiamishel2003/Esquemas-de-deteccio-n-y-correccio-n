@@ -64,8 +64,11 @@ def hamming_emit(msg_bits: str, verbose: bool = True) -> str:
         matriz[pos_paridad - 1][0] = res
     # palabra código
     codeword = ''.join(matriz[i][0] for i in range(m_total))
-    return codeword
+    # Añadir bit de paridad global (p0)
+    total_ones = codeword.count('1')
+    p0 = '1' if (total_ones % 2) else '0'   # si #1s es impar, p0=1 para dejar total par
 
+    return codeword + p0
 
 # ------------------- CRC-32 (MSB-first, polinomio 0x04C11DB7) -------------------
 POLY = 0x04C11DB7  # grado 32
