@@ -33,7 +33,21 @@ def calcular_integridad(bits, algoritmo):
         raise ValueError("Algoritmo no soportado")
 
 
+# ====================== CAPA: Ruido ======================
+def aplicar_ruido(trama, prob_error=0.01):
+    bits = list(trama)
+    for i in range(len(bits)):
+        if random.random() < prob_error:
+            bits[i] = '0' if bits[i] == '1' else '1'
+    return ''.join(bits)
 
+
+# ====================== CAPA: Transmisión ======================
+def enviar_trama(trama, host="127.0.0.1", puerto=5000):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((host, puerto))
+        s.sendall(trama.encode())
+    print(f"\nTrama enviada: {trama}")
 
 
 # ====================== MAIN ======================
@@ -48,6 +62,7 @@ Opción: """
     bits = codificar_ascii(mensaje)
     # print(f"\nMensaje en binario: {bits}")
     trama = calcular_integridad(bits, algoritmo)
-    print(f"Trama generada: {trama}")
-    # trama_ruido = aplicar_ruido(trama, prob_error=0.01)
-    # enviar_trama(trama_ruido)
+    # print(f"Trama generada: {trama}")
+    trama_ruido = aplicar_ruido(trama, prob_error=0.01)
+    # print(f"Trama con ruido: {trama_ruido}")
+    enviar_trama(trama_ruido)
