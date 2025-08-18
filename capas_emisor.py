@@ -2,6 +2,7 @@ import socket
 import random
 import emisor
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
 # ====================== CAPA: Aplicación ======================
@@ -31,6 +32,8 @@ def calcular_integridad(bits, algoritmo, fletcher_tipo=None):
             tipo = input("Seleccione tipo Fletcher (8, 16, 32): ").strip()
             if tipo not in ("8", "16", "32"):
                 raise ValueError("Tipo de Fletcher no válido")
+            else:
+                algoritmo = str(int(algoritmo) + int(np.log2(tipo)))
         else:  # modo masivo
             tipo = fletcher_tipo
         frame, _, _ = emisor.fletcher_emit(bits, int(tipo))
@@ -65,8 +68,11 @@ def prueba_manual():
     bits = codificar_ascii(mensaje)
     trama = calcular_integridad(bits, algoritmo)
     trama_ruido = aplicar_ruido(trama, prob_error=0.01)
-    respuesta = enviar_trama(trama_ruido)
-    print(f"\nTrama enviada: {trama_ruido}")
+
+    header = format(int(algoritmo), '08b')
+    trama_final = header + trama_ruido
+    respuesta = enviar_trama(trama_final)
+    print(f"\nTrama enviada: {trama_final[:8]}-{trama_final[8:]}")
     print(f"Respuesta del receptor: {respuesta}")
 
 
@@ -131,7 +137,6 @@ Seleccione algoritmo:
     2) CRC-32 (detección)
     3) Fletcher checksum (8/16/32)
 Opción: """
-
     modo = solicitar_modo()
     if modo == "1":
         prueba_manual()
