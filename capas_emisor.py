@@ -77,9 +77,16 @@ def prueba_manual():
 # ====================== PRUEBAS MASIVAS ======================
 def prueba_masiva(num_pruebas=10000):
     resultados = []
+    alg_names = {
+        "00000001": "Hamming",
+        "00000010": "CRC-32",
+        "00000011": "Fletcher x08",
+        "00000100": "Fletcher x16",
+        "00000101": "Fletcher x32"
+    }
     algoritmos = ["1", "2", "3"]
     tamanos = [8, 16, 32, 64, 128]
-    probabilidades = [0.001, 0.01, 0.05, 0.1]
+    probabilidades = [0.001, 0.01, 0.05, 0.1, 0.2]
 
     for algoritmo in algoritmos:
         for tam in tamanos:
@@ -89,19 +96,21 @@ def prueba_masiva(num_pruebas=10000):
                     # Generar mensaje aleatorio
                     mensaje = ''.join(random.choice("01") for _ in range(tam))
                     fletcher_tipo = random.choice(["8", "16", "32"]) if algoritmo == "3" else None
-                    trama = calcular_integridad(mensaje, algoritmo, fletcher_tipo)
+                    header, trama = calcular_integridad(mensaje, algoritmo, fletcher_tipo)
                     trama_ruido = aplicar_ruido(trama, prob_error=p)
-
+                    trama_final = header+trama_ruido
                     # Enviar al receptor y obtener respuesta
-                    respuesta = enviar_trama(trama_ruido)
+                    respuesta = enviar_trama(trama_final)
                     if respuesta == mensaje or respuesta == "OK":
                         respuesta = "OK"
+                    elif respuesta == mensaje or respuesta == "FIXED":
+                        respuesta = "FIXED"
                     else:
                         respuesta = "ERROR"
 
                     # Guardar resultados (el receptor debe enviar "OK" o "ERROR")
                     resultados.append({
-                        "algoritmo": algoritmo,
+                        "algoritmo": alg_names[header],
                         "tamano": tam,
                         "prob_error": p,
                         "resultado": respuesta
