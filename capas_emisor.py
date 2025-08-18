@@ -24,20 +24,18 @@ def codificar_ascii(mensaje):
 # ====================== CAPA: Enlace ======================
 def calcular_integridad(bits, algoritmo, fletcher_tipo=None):
     if algoritmo == "1":  # Hamming
-        return emisor.hamming_emit(bits)
+        return format(1, '08b'), emisor.hamming_emit(bits)
     elif algoritmo == "2":  # CRC-32
-        return emisor.crc32_emit(bits)
+        return format(2, '08b'), emisor.crc32_emit(bits)
     elif algoritmo == "3":  # Fletcher
         if fletcher_tipo is None:  # modo manual
             tipo = input("Seleccione tipo Fletcher (8, 16, 32): ").strip()
             if tipo not in ("8", "16", "32"):
                 raise ValueError("Tipo de Fletcher no válido")
-            else:
-                algoritmo = str(int(algoritmo) + int(np.log2(tipo)))
         else:  # modo masivo
             tipo = fletcher_tipo
         frame, _, _ = emisor.fletcher_emit(bits, int(tipo))
-        return frame
+        return format(int(np.log2(int(tipo))), '08b'), frame
     else:
         raise ValueError("Algoritmo no soportado")
 
@@ -66,10 +64,10 @@ def enviar_trama(trama, host="127.0.0.1", puerto=5000):
 def prueba_manual():
     mensaje, algoritmo = solicitar_mensaje()
     bits = codificar_ascii(mensaje)
-    trama = calcular_integridad(bits, algoritmo)
-    trama_ruido = aplicar_ruido(trama, prob_error=0.01)
-
-    header = format(int(algoritmo), '08b')
+    header, trama = calcular_integridad(bits, algoritmo)
+    print(header)
+    trama_ruido = aplicar_ruido(trama, prob_error=0)
+    
     trama_final = header + trama_ruido
     respuesta = enviar_trama(trama_final)
     print(f"\nTrama enviada: {trama_final[:8]}-{trama_final[8:]}")

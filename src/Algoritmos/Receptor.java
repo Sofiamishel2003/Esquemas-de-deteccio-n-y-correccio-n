@@ -1,3 +1,4 @@
+package src.Algoritmos;
 import java.util.*;
 
 public class Receptor {
@@ -8,9 +9,12 @@ public class Receptor {
     }
 
     // ---------------- Hamming (paridad par) -----------------
-    static class Hamming {
-        static String recibir(String trama) {
-            if (trama.length() < 3) return "[RECEPTOR:Hamming] Trama demasiado corta.";
+    public static class Hamming {
+        public static String recibir(String trama) {
+            if (trama.length() < 3) {
+                System.err.println("[RECEPTOR:Hamming] Trama demasiado corta.");
+                return "";
+            }
 
             // separar p0 (último bit) y el resto del código
             int nTotal = trama.length();
@@ -39,20 +43,26 @@ public class Receptor {
             if (syndrome == 0 && parityAll == 0) {
                 // sin errores
                 String msg = extraerDatos(code);
-                return "[RECEPTOR:Hamming-SECDED] Sin errores. Mensaje original: " + msg;
+                System.out.println("[RECEPTOR:Hamming-SECDED] Sin errores. Mensaje original: "+ msg);
+                return msg;
             }
             if (syndrome == 0 && parityAll == 1) {
                 // error solo en p0
-                return "[RECEPTOR:Hamming-SECDED] Se corrigió el bit de paridad global (p0). Mensaje: " + extraerDatos(code);
+                String msg = extraerDatos(code);
+                System.out.println("[RECEPTOR:Hamming-SECDED] Se corrigió el bit de paridad global (p0). Mensaje: "+msg);
+                return msg;
             }
             if (syndrome != 0 && parityAll == 1) {
                 // un error en alguna posición del código (corregible)
                 code[syndrome] ^= 1;
                 String msg = extraerDatos(code);
-                return "[RECEPTOR:Hamming-SECDED] Se corrigió 1 bit en posición " + syndrome + ". Mensaje corregido: " + msg;
+
+                System.out.println("[RECEPTOR:Hamming-SECDED] Se corrigió 1 bit en posición " + syndrome + ". Mensaje corregido: " + msg);
+                return msg;
             }
             // syndrome != 0 && parityAll == 0  ->  2+ errores: DETECTA pero NO corrige
-            return "[RECEPTOR:Hamming-SECDED] Se detectaron múltiples errores (2+). Mensaje descartado.";
+            System.out.println("[RECEPTOR:Hamming-SECDED] Se detectaron múltiples errores (2+). Mensaje descartado.");
+            return "";
         }
 
         static String extraerDatos(int[] code) {
@@ -65,19 +75,25 @@ public class Receptor {
     }
 
     // ---------------- CRC-32 (MSB-first, polinomio 1||0x04C11DB7) -----------------
-    static class CRC32MSB {
+    public static class CRC32MSB {
         static final int POLY = 0x04C11DB7;
         static final int DEG = 32;
 
-        static String verificar(String trama) {
-            if (trama.length() <= DEG) return "[RECEPTOR:CRC-32] Trama demasiado corta.";
+        public static String verificar(String trama) {
+            if (trama.length() <= DEG) {
+                System.out.println("[RECEPTOR:CRC-32] Trama demasiado corta.");
+                return "";
+            }
+            
             String msg = trama.substring(0, trama.length() - DEG);
             String remRx = trama.substring(trama.length() - DEG);
             String remCalc = remainder(msg);
             if (remCalc.equals(remRx) && isZeroRemainder(msg + remRx)) {
-                return "[RECEPTOR:CRC-32] Sin errores. Mensaje original: " + msg;
+                System.out.println("[RECEPTOR:CRC-32] Sin errores. Mensaje original: " + msg);
+                return msg;
             } else {
-                return "[RECEPTOR:CRC-32] Se detectaron errores. Mensaje descartado.";
+                System.out.println("[RECEPTOR:CRC-32] Se detectaron errores. Mensaje descartado.");
+                return "";
             }
         }
         static String remainder(String bits) {
@@ -119,13 +135,19 @@ public class Receptor {
     }
 
     // ---------------- Fletcher-8/16/32 (w = tipo/2; Sum1=1, Sum2=1; mod 2^w-1) -----------------
-    static class Fletcher {
-        static String verificar(String trama, int tipo) {
-            if (tipo != 8 && tipo != 16 && tipo != 32)
-                return "[RECEPTOR:Fletcher] Tipo inválido (use 8/16/32).";
+    public static class Fletcher {
+        public static String verificar(String trama, int tipo) {
+            if (tipo != 8 && tipo != 16 && tipo != 32){
+                System.out.println("[RECEPTOR:Fletcher] Tipo inválido (use 8/16/32).");
+                return "";
+            }
+                
             int w = tipo / 2;
-            if (trama.length() <= tipo)
-                return "[RECEPTOR:Fletcher] Trama demasiado corta.";
+
+            if (trama.length() <= tipo){
+                System.out.println("[RECEPTOR:Fletcher] Trama demasiado corta.");
+                return "";
+            }
 
             // separar mensaje y checksum (el mensaje llega SIN padding)
             String msg = trama.substring(0, trama.length() - tipo);
@@ -148,40 +170,42 @@ public class Receptor {
             else if (ckCalc.length() > tipo) ckCalc = ckCalc.substring(ckCalc.length() - tipo);
 
             if (ckCalc.equals(ckRx)) {
-                return "[RECEPTOR:Fletcher-" + tipo + "] Sin errores. Mensaje original: " + msg;
+                System.out.println("[RECEPTOR:Fletcher-" + tipo + "] Sin errores. Mensaje original: " + msg);
+                return msg;
             } else {
-                return "[RECEPTOR:Fletcher-" + tipo + "] Se detectaron errores. Mensaje descartado.";
+                System.out.println("[RECEPTOR:Fletcher-" + tipo + "] Se detectaron errores. Mensaje descartado.");
+                return "";
             }
         }
     }
 
     // ---------------- Main -----------------
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        System.out.print("Seleccione algoritmo del RECEPTOR:\n  1) Hamming\n  2) CRC-32\n  3) Fletcher checksum\nOpción: ");
-        String opt = sc.nextLine().trim();
-        System.out.print("Ingrese la trama binaria recibida: ");
-        String trama = sc.nextLine().trim();
-        if (!soloBits(trama)) { System.out.println("[Error] Solo se permiten 0s y 1s, y longitud > 0"); return; }
+    // public static void main(String[] args) {
+    //     Scanner sc = new Scanner(System.in);
+    //     System.out.print("Seleccione algoritmo del RECEPTOR:\n  1) Hamming\n  2) CRC-32\n  3) Fletcher checksum\nOpción: ");
+    //     String opt = sc.nextLine().trim();
+    //     System.out.print("Ingrese la trama binaria recibida: ");
+    //     String trama = sc.nextLine().trim();
+    //     if (!soloBits(trama)) { System.out.println("[Error] Solo se permiten 0s y 1s, y longitud > 0"); return; }
 
-        switch (opt) {
-            case "1":
-                System.out.println(Hamming.recibir(trama));
-                break;
-            case "2":
-                System.out.println(CRC32MSB.verificar(trama));
-                break;
-            case "3":
-                System.out.print("Seleccione Fletcher (8,16,32): ");
-                try {
-                    int tipo = Integer.parseInt(sc.nextLine().trim());
-                    System.out.println(Fletcher.verificar(trama, tipo));
-                } catch (Exception e) {
-                    System.out.println("[RECEPTOR:Fletcher] Error: " + e.getMessage());
-                }
-                break;
-            default:
-                System.out.println("Opción inválida");
-        }
-    }
+    //     switch (opt) {
+    //         case "1":
+    //             System.out.println(Hamming.recibir(trama));
+    //             break;
+    //         case "2":
+    //             System.out.println(CRC32MSB.verificar(trama));
+    //             break;
+    //         case "3":
+    //             System.out.print("Seleccione Fletcher (8,16,32): ");
+    //             try {
+    //                 int tipo = Integer.parseInt(sc.nextLine().trim());
+    //                 System.out.println(Fletcher.verificar(trama, tipo));
+    //             } catch (Exception e) {
+    //                 System.out.println("[RECEPTOR:Fletcher] Error: " + e.getMessage());
+    //             }
+    //             break;
+    //         default:
+    //             System.out.println("Opción inválida");
+    //     }
+    // }
 }
