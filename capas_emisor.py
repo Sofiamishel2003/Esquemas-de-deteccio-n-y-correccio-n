@@ -4,6 +4,7 @@ import emisor
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import analysis
 
 # ====================== CAPA: Aplicación ======================
 def solicitar_modo():
@@ -100,7 +101,9 @@ def prueba_masiva(num_pruebas=10000):
                     trama_ruido = aplicar_ruido(trama, prob_error=p)
                     trama_final = header+trama_ruido
                     # Enviar al receptor y obtener respuesta
-                    respuesta = enviar_trama(trama_final)
+                    rslt = enviar_trama(trama_final).split(",")
+                    
+                    respuesta = rslt[0]
                     if respuesta == mensaje or respuesta == "OK":
                         respuesta = "OK"
                     elif respuesta == mensaje or respuesta == "FIXED":
@@ -113,27 +116,14 @@ def prueba_masiva(num_pruebas=10000):
                         "algoritmo": alg_names[header],
                         "tamano": tam,
                         "prob_error": p,
+                        "tiempo": float(rslt[1]),
                         "resultado": respuesta
                     })
 
     df = pd.DataFrame(resultados)
     df.to_csv("resultados.csv", index=False)
     print("\nResultados guardados en resultados.csv")
-    generar_graficas(df)
-
-
-def generar_graficas(df):
-    # Gráfico general
-    resumen = df.groupby("algoritmo")["resultado"].apply(lambda x: (x=="OK").mean())
-    resumen.plot(kind="bar", title="Tasa de aciertos por algoritmo")
-    plt.show()
-
-    # Gráficos individuales
-    for alg in df["algoritmo"].unique():
-        sub = df[df["algoritmo"] == alg]
-        tabla = sub.groupby("prob_error")["resultado"].apply(lambda x: (x=="OK").mean())
-        tabla.plot(marker="o", title=f"Desempeño Algoritmo {alg}", ylabel="Tasa de aciertos")
-        plt.show()
+    analysis.generar_graficas(df)
 
 
 # ====================== MAIN ======================

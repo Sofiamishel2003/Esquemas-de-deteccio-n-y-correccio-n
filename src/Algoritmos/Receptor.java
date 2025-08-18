@@ -13,6 +13,7 @@ public class Receptor {
     //      2 = Error
     // ---------------- Hamming (paridad par) -----------------
     public static class Hamming {
+        
         public static String[] recibir(String trama) {
             String[] ret_statement = new String[2];
             if (trama.length() < 3) {

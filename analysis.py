@@ -4,6 +4,15 @@ from matplotlib import pyplot as plt
 def generar_graficas(df):
     # Gráfico general
     
+    # tiempo
+    
+    tiempo = df.groupby("algoritmo")["tiempo"].mean()
+    tiempo.plot(kind="bar", title="Tiempo medio de ejecucion por algoritmo")
+    plt.xticks(ha='right', rotation=30)
+    plt.xlabel("Algoritmo")
+    plt.ylabel("Tiempo (ns)")
+    plt.tight_layout()
+    plt.show()
     # -- Hamming -- #
     # ham = df[df["algoritmo"]=="Hamming"]
     # ham_bar = ham["resultado"].value_counts().reindex(["OK", "FIXED", "ERROR"], fill_value=0) / len(ham)
@@ -27,21 +36,21 @@ def generar_graficas(df):
     # plt.show()
     
     # -- CRC -- #
-    crc = df[df["algoritmo"]=="CRC-32"]
-    crc_bar = crc["resultado"].value_counts().reindex(["OK", "ERROR"], fill_value=0) / len(crc)
-    crc_bar.plot(kind="bar", title="Tasa de aciertos: CRC-32")
-    plt.grid(axis="y", linestyle='--', alpha=0.6)
-    plt.tight_layout()
-    plt.xticks(ha='right', rotation=30)
-    plt.show()
+    # crc = df[df["algoritmo"]=="CRC-32"]
+    # crc_bar = crc["resultado"].value_counts().reindex(["OK", "ERROR"], fill_value=0) / len(crc)
+    # crc_bar.plot(kind="bar", title="Tasa de aciertos: CRC-32")
+    # plt.grid(axis="y", linestyle='--', alpha=0.6)
+    # plt.tight_layout()
+    # plt.xticks(ha='right', rotation=30)
+    # plt.show()
     
-    tb4 = crc.groupby("prob_error")["resultado"].apply(lambda x: (x=="OK").mean())
-    tb4.plot(marker="o", title=f"Desempeño VS Nivel de Error", label="Ok")
-    plt.grid(axis="y", linestyle='--', alpha=0.6)
-    plt.tight_layout()
-    plt.legend()
-    plt.xticks(ha='right', rotation=30)
-    plt.show()
+    # tb4 = crc.groupby("prob_error")["resultado"].apply(lambda x: (x=="OK").mean())
+    # tb4.plot(marker="o", title=f"Desempeño VS Nivel de Error", label="Ok")
+    # plt.grid(axis="y", linestyle='--', alpha=0.6)
+    # plt.tight_layout()
+    # plt.legend()
+    # plt.xticks(ha='right', rotation=30)
+    # plt.show()
     
     # -- Fletcher -- #
     # fletch = df[(df["algoritmo"]!= "CRC-32") & (df["algoritmo"]!= "Hamming")]

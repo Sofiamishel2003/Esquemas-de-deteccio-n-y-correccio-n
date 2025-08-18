@@ -9,33 +9,53 @@ import src.Algoritmos.Receptor;
 
 public class capas_receptor {
     public static String[] receive(String trama, int algoritmo){
-        String[] result = new String[2];
+        String[] result = new String[3];
         if(algoritmo == 1){
+            long startTime = System.nanoTime();
             src.Algoritmos.Receptor.Hamming receiver = new src.Algoritmos.Receptor.Hamming();
-            return receiver.recibir(trama);
+            long endTime = System.nanoTime();
+            String elapsedStr = (endTime - startTime)+"";
+            String[] msg = receiver.recibir(trama);
+            result[0] = msg[0];
+            result[1] = msg[1];
+            result[2] = elapsedStr;
+            return result;
         }
         if(algoritmo == 2){
             src.Algoritmos.Receptor.CRC32MSB receiver = new src.Algoritmos.Receptor.CRC32MSB();
+            long startTime = System.nanoTime();
+
             String msg = receiver.verificar(trama);
+
+            long endTime = System.nanoTime();
+            String elapsedStr = (endTime - startTime)+"";
             String status = "0";
             if(msg.isEmpty()) status = "2";
             result[0] = status;
             result[1] = "";
+            result[2] = elapsedStr;
             return result;
         }
         if(algoritmo >= 3 && algoritmo <=5){
             src.Algoritmos.Receptor.Fletcher receiver = new src.Algoritmos.Receptor.Fletcher();
             int tipo = (int)Math.pow(2, algoritmo);
-            System.out.println(tipo);
+
+            long startTime = System.nanoTime();
             String msg = receiver.verificar(trama,tipo);
+
+            long endTime = System.nanoTime();
+            String elapsedStr = (endTime - startTime)+"";
+
             String status = "0";
             if(msg.isEmpty()) status = "2";
             result[0] = status;
             result[1] = "";
+            result[2] = elapsedStr;
             return result;
         } else{
             result[0] = "2";
             result[1] = "";
+            result[2] = "";
             return result;
         }
 
@@ -73,16 +93,16 @@ public class capas_receptor {
                         
                         String[] rslt = receive(trama, algoritmo);
                         if(rslt[0].equals("2")){
-                            out.println("ERROR");
+                            out.println("ERROR,"+rslt[2]);
                             System.out.println("Respuesta enviada: ERROR");
                         } else{
                             String constructed = decode(rslt[1]);
                             System.out.println("Decoded message = \'"+constructed+"\'");
                             if(rslt[0]=="1"){
-                                out.println("FIXED");
+                                out.println("FIXED,"+rslt[2]);
                                 System.out.println("Respuesta enviada: FIXED");
                             } else{
-                                out.println("OK");
+                                out.println("OK,"+rslt[2]);
                                 System.out.println("Respuesta enviada: OK");
                             }
                            
